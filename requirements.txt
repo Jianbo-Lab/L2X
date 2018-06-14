@@ -1,0 +1,5 @@
+numpy
+tensorflow 
+keras
+pandas
+nltk
