@@ -25,7 +25,7 @@ python explain.py --task original --train
 python explain.py --task L2X --train 
 ###############################################
 # Evaluate the consistency between the prediction on selected 
-# sentence and that on the original sample.
+# sentences and that on the original sample.
 python validate_explanation.py
 ```
 

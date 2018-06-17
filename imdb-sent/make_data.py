@@ -16,7 +16,6 @@ import pandas as pd
 import sys
 import os
 import time 
-# from keras import initializations
 import json 
 from keras.preprocessing.text import Tokenizer, text_to_word_sequence
 from keras.utils import to_categorical
@@ -29,8 +28,7 @@ VALIDATION_SPLIT = 0.2
 
 def clean_str(string):
     """
-    Tokenization/string cleaning for dataset
-    Every dataset is lower cased except
+    Tokenization/string cleaning for dataset.
     """
     string = re.sub(r"\\", "", string)    
     string = re.sub(r"\'", "", string)    
@@ -39,6 +37,10 @@ def clean_str(string):
 
 
 def create_dataset():
+    """
+    Create the IMDB dataset as numpy arrays.
+    
+    """
     st = time.time()
     print('Constructing dataset...')
     data_train = pd.read_csv('data/labeledTrainData.tsv', sep='\t') 
@@ -139,6 +141,14 @@ def create_dataset():
         pkl.dump(word_index, f) 
 
 def load_data():  
+    """
+    Load data if data have been created.
+    Create data otherwise.
+    
+    """
+
+    if 'data' not in os.listdir('.'):
+        os.mkdir('data')
     if 'word_index.pkl' not in os.listdir('data'): 
         create_dataset()
 
@@ -160,6 +170,21 @@ def load_data():
                 'embedding_matrix': embedding_matrix}
     print('Data loaded...') 
     return dataset
+
+def create_dataset_from_score(scores, x):
+    """
+    Construct data set containing selected sentences by L2X.
+
+    """
+    if len(scores.shape) == 3:
+        scores = np.squeeze(scores) 
+    sent_ids = np.argmax(scores, axis = 1)
+
+    x_new = np.zeros(x.shape)
+    for i, sent_id in enumerate(sent_ids):
+        x_new[i,sent_id,:] = x[i][sent_id]
+
+    np.save('data/x_val-L2X.npy',np.array(x_new))
 
  
   

@@ -1,3 +1,6 @@
+"""
+Compute the accuracy with selected sentences by using L2X.
+"""
 from __future__ import print_function 
 import numpy as np
 import pandas as pd
@@ -9,9 +12,6 @@ except:
 from collections import defaultdict
 import re 
 from bs4 import BeautifulSoup 
-"""
-Compute the accuracy with selected sentences by using L2X.
-"""
 import sys
 import os
 import time  
@@ -21,12 +21,6 @@ import json
 import tensorflow as tf
 import csv
 from explain import create_original_model
-
-MAX_SENT_LENGTH = 100
-MAX_SENTS = 1
-MAX_NB_WORDS = 20000
-EMBEDDING_DIM = 100
-BATCHSIZE = 100
 
 def validate(): 
 	print('Loading dataset...') 
