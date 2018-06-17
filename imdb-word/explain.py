@@ -2,24 +2,18 @@
 The code for constructing the original word-CNN is based on
 https://github.com/keras-team/keras/blob/master/examples/imdb_cnn.py
 """
-from __future__ import absolute_import, division, print_function 
-from keras.preprocessing import sequence
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation
-from keras.layers import Embedding
-from keras.layers import Conv1D, Input, GlobalMaxPooling1D, Multiply, Lambda, Permute
+from __future__ import absolute_import, division, print_function   
+from keras.layers import Conv1D, Input, GlobalMaxPooling1D, Multiply, Lambda, Embedding, Dense, Dropout, Activation
 from keras.datasets import imdb
-from keras.objectives import binary_crossentropy
-from keras.metrics import binary_accuracy as accuracy
-from keras.optimizers import RMSprop
+from keras.engine.topology import Layer 
 from keras import backend as K  
-import numpy as np
-import tensorflow as tf
-import os
 from keras.preprocessing import sequence
 from keras.datasets import imdb
 from keras.callbacks import ModelCheckpoint
-from keras.models import Model
+from keras.models import Model, Sequential 
+
+import numpy as np
+import tensorflow as tf 
 import time 
 import numpy as np 
 import sys
@@ -32,11 +26,12 @@ try:
 except:
 	import pickle
 import os 
-from utils import create_dataset_from_score
+from utils import create_dataset_from_score, calculate_acc
 
 
-# set parameters:
+# Set parameters:
 tf.set_random_seed(10086)
+np.random.seed(10086)
 max_features = 5000
 maxlen = 400
 batch_size = 40
@@ -45,10 +40,20 @@ filters = 250
 kernel_size = 3
 hidden_dims = 250
 epochs = 5
-k =10
+k =10 # Number of selected words by L2X.
 PART_SIZE = 125
 
+###########################################
+###############Load data###################
+###########################################
+
 def load_data():
+	"""
+	Load data if data have been created.
+	Create data otherwise.
+
+	"""
+
 	if 'data' not in os.listdir('.'):
 		os.mkdir('data') 
 		
@@ -85,7 +90,15 @@ def load_data():
 
 	return x_train, y_train, x_val, y_val, id_to_word
 
+###########################################
+###############Original Model##############
+###########################################
+
 def create_original_model():
+	"""
+	Build the original model to be explained. 
+
+	"""
 	model = Sequential()
 	model.add(Embedding(max_features,
 						embedding_dims,
@@ -109,13 +122,17 @@ def create_original_model():
 
 	return model
 
-def calculate_acc(pred, y):
-	return np.mean(np.argmax(pred, axis = 1) == np.argmax(y, axis = 1))
 
-###########################################
-###############Original Model##############
-###########################################
+
+
 def generate_original_preds(train = True): 
+	"""
+	Generate the predictions of the original model on training
+	and validation datasets. 
+
+	The original model is also trained if train = True. 
+
+	"""
 	x_train, y_train, x_val, y_val, id_to_word = load_data() 
 	model = create_original_model()
 
@@ -146,8 +163,11 @@ def generate_original_preds(train = True):
 Mean = Lambda(lambda x: K.sum(x, axis = 1) / float(k), 
 	output_shape=lambda x: [x[0],x[2]]) 
 
-from keras.engine.topology import Layer 
 class Concatenate(Layer):
+	"""
+	Layer for concatenation. 
+	
+	"""
 	def __init__(self, **kwargs): 
 		super(Concatenate, self).__init__(**kwargs)
 
@@ -164,8 +184,12 @@ class Concatenate(Layer):
 		input_shape[-1] = int(input_shape[-1]) + int(input_shape1[-1])
 		input_shape[-2] = int(input_shape[-2])
 		return tuple(input_shape)
-class Sample_Concrete(Layer):
 
+class Sample_Concrete(Layer):
+	"""
+	Layer for sample Concrete / Gumbel-Softmax variables. 
+
+	"""
 	def __init__(self, tau0, k, **kwargs): 
 		self.tau0 = tau0
 		self.k = k
@@ -196,6 +220,10 @@ class Sample_Concrete(Layer):
 		return input_shape
 
 def construct_gumbel_selector(X_ph, num_words, embedding_dims, maxlen):
+	"""
+	Build the L2X model for selecting words. 
+
+	"""
 	emb_layer = Embedding(num_words, embedding_dims, input_length = maxlen, name = 'emb_gumbel')
 	emb = emb_layer(X_ph) #(400, 50) 
 	net = Dropout(0.2, name = 'dropout_gumbel')(emb)
@@ -219,6 +247,13 @@ def construct_gumbel_selector(X_ph, num_words, embedding_dims, maxlen):
 
 
 def L2X(train = True): 
+	"""
+	Generate scores on features on validation by L2X.
+
+	Train the L2X model with variational approaches 
+	if train = True. 
+
+	"""
 	print('Loading dataset...') 
 	x_train, y_train, x_val, y_val, id_to_word = load_data()
 	pred_train = np.load('data/pred_train.npy')
@@ -277,7 +312,8 @@ def L2X(train = True):
 	st = time.time()
 	scores = pred_model.predict(x_val, 
 		verbose = 1, batch_size = batch_size)[:,:,0] 
-	return scores, pred_val, y_val, x_val
+	scores = np.reshape(scores, [scores.shape[0], maxlen])
+	return scores, x_val 
 
 if __name__ == '__main__':
 	import argparse
@@ -293,8 +329,7 @@ if __name__ == '__main__':
 		generate_original_preds(args.train) 
 
 	elif args.task == 'L2X':
-		scores, pred, y, x = L2X(args.train)
-		scores = np.reshape(scores, [scores.shape[0], maxlen])
+		scores, x = L2X(args.train)
 		print('Creating dataset with selected sentences...')
 		create_dataset_from_score(x, scores, k)
 

@@ -27,6 +27,9 @@ def create_dataset_from_score(x, scores, k):
 
 	np.save('data/x_val-L2X.npy', np.array(new_data))
 
+def calculate_acc(pred, y):
+	return np.mean(np.argmax(pred, axis = 1) == np.argmax(y, axis = 1))
+	
 	
 
 
