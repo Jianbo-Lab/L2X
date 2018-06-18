@@ -27,12 +27,10 @@ def validate():
 	dataset = load_data()
 	word_index = dataset['word_index']  
 	x_val = np.load('data/x_val-L2X.npy') 
-	pred_val = np.load('data/pred_val.npy')
-	indices = dataset['indices'] 
-	embedding_matrix = dataset['embedding_matrix']
+	pred_val = np.load('data/pred_val.npy') 
 				
 	print('Creating model...')
-	model = create_original_model(embedding_matrix, word_index)
+	model = create_original_model(word_index)
 	model.load_weights('./models/original.hdf5', 
 		by_name=True) 
 

@@ -39,9 +39,9 @@ from make_data import load_data, create_dataset_from_score
 tf.set_random_seed(10086)
 np.random.seed(10086)
 MAX_SENT_LENGTH = 100
-MAX_SENTS = 15
-MAX_NB_WORDS = 20000
+MAX_SENTS = 15 
 EMBEDDING_DIM = 100
+MAX_NUM_WORDS = 20000
 BATCHSIZE = 100
 k = 1 # Number of selected sentences by L2X. 
 
@@ -49,15 +49,14 @@ k = 1 # Number of selected sentences by L2X.
 ##########Original Model###########
 ###################################
 
-def create_original_model(embedding_matrix, word_index):
+def create_original_model(word_index):
 	"""
 	Build the original model to be explained. 
 
 	"""
 	with tf.variable_scope('prediction_model'): 
-		embedding_layer = Embedding(len(word_index) + 1,
-										EMBEDDING_DIM,
-										weights=[embedding_matrix],
+		embedding_layer = Embedding(MAX_NUM_WORDS + 1,
+										EMBEDDING_DIM, 
 										input_length=MAX_SENT_LENGTH,
 										name = 'embedding',
 										trainable=True)
@@ -93,11 +92,9 @@ def generate_original_preds(train = True):
 	word_index = dataset['word_index']
 	x_train, x_val, y_train, y_val = dataset['x_train'], \
 	dataset['x_val'], dataset['y_train'], dataset['y_val']
-	indices = dataset['indices'] 
-	embedding_matrix = dataset['embedding_matrix']
 				
 	print('Creating model...')
-	model = create_original_model(embedding_matrix, word_index)
+	model = create_original_model(word_index)
 
 	if train:
 		if 'models' not in os.listdir('.'):
@@ -108,7 +105,7 @@ def generate_original_preds(train = True):
 			verbose=1, save_best_only=True, mode='max')
 		callbacks_list = [checkpoint]
 		model.fit(x_train, y_train, validation_data=(x_val, y_val), callbacks = callbacks_list, 
-			epochs=10, batch_size=BATCHSIZE)
+			epochs=5, batch_size=BATCHSIZE)
 
 
 	weights_name = 'original.hdf5'
@@ -188,15 +185,14 @@ class Sample_Concrete(Layer):
 	def compute_output_shape(self, input_shape):
 		return input_shape
 
-def construct_gumbel_selector(review_input, max_sent_length, embedding_dim, embedding_matrix, max_sents, word_index):
+def construct_gumbel_selector(review_input, max_sent_length, embedding_dim, max_sents, word_index):
 	"""
 	Build the L2X model for selecting sentences. 
 
 	"""
 	sentence_input = Input(shape=(max_sent_length,), dtype='int32')
-	embedding_layer = Embedding(len(word_index) + 1,
-								embedding_dim,
-								weights=[embedding_matrix],
+	embedding_layer = Embedding(MAX_NUM_WORDS + 1,
+								embedding_dim, 
 								input_length=max_sent_length,
 								name = 'embedding',
 								trainable=True)
@@ -218,10 +214,9 @@ def construct_gumbel_selector(review_input, max_sent_length, embedding_dim, embe
 	first_layer = Conv1D(100, 3, padding='same', activation='relu', strides=1, name = 'conv1_gumbel')(net)  
 
 
-	# global info
-	# we use max pooling:
+	# global info 
 	net_new = GlobalMaxPooling1D(name = 'new_global_max_pooling1d_1')(first_layer)
-	# We add a vanilla hidden layer:
+
 	global_info = Dense(100, name = 'new_dense_1', activation='relu')(net_new) 
 
 	# local info
@@ -247,8 +242,6 @@ def L2X(train = True):
 	dataset = load_data()
 	word_index = dataset['word_index']
 	x_train, x_val, y_train, y_val = dataset['x_train'], dataset['x_val'], dataset['y_train'], dataset['y_val']
-	indices = dataset['indices'] 
-	embedding_matrix = dataset['embedding_matrix']
 	with open('./data/word_index.pkl','rb') as f:
 		word_index = pkl.load(f) 
 
@@ -258,7 +251,7 @@ def L2X(train = True):
 	with tf.variable_scope('selection_model'):
 		
 		review_input = Input(shape=(MAX_SENTS,MAX_SENT_LENGTH), dtype='int32')
-		logits_T = construct_gumbel_selector(review_input, MAX_SENT_LENGTH, EMBEDDING_DIM, embedding_matrix, MAX_SENTS, word_index)
+		logits_T = construct_gumbel_selector(review_input, MAX_SENT_LENGTH, EMBEDDING_DIM, MAX_SENTS, word_index)
 		tau = 0.5
 		T = Sample_Concrete(tau, k)(logits_T)
 
@@ -266,9 +259,8 @@ def L2X(train = True):
 	with tf.variable_scope('prediction_model'):  
 		sentence_input = Input(shape=(MAX_SENT_LENGTH,), dtype='int32')
 
-		embedding_layer = Embedding(len(word_index) + 1,
-									EMBEDDING_DIM,
-									weights=[embedding_matrix],
+		embedding_layer = Embedding(MAX_NUM_WORDS + 1,
+									EMBEDDING_DIM, 
 									input_length=MAX_SENT_LENGTH,
 									name = 'embedding',
 									trainable=True)
@@ -287,7 +279,6 @@ def L2X(train = True):
 		selected_encoding = Multiply()([review_encoder2, T])
 		net = Mean(selected_encoding)
 		net = Dense(250)(net)
-		# net = Dropout(0.2)(net)
 		net = Activation('relu')(net) 
 		preds = Dense(2, activation='softmax', 
 			name = 'new_dense')(net)
