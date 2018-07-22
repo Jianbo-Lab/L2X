@@ -111,7 +111,7 @@ class Sample_Concrete(Layer):
 
 
 def L2X(datatype, train = True): 
-	x_train,y_train_data,x_val,y_val_data,datatype_val, input_shape = create_data(datatype, 
+	x_train,y_train,x_val,y_val,datatype_val, input_shape = create_data(datatype, 
 		n = int(1e6))
 	 
 	st1 = time.time()
@@ -154,7 +154,7 @@ def L2X(datatype, train = True):
 		checkpoint = ModelCheckpoint(filepath, monitor='val_acc', 
 			verbose=1, save_best_only=True, mode='max')
 		callbacks_list = [checkpoint]
-		model.fit(x_train, y_train_data, validation_data=(x_val, y_val_data),callbacks = callbacks_list, epochs=1, batch_size=BATCH_SIZE)
+		model.fit(x_train, y_train, validation_data=(x_val, y_val),callbacks = callbacks_list, epochs=1, batch_size=BATCH_SIZE)
 		st2 = time.time() 
 	else:
 		model.load_weights('models/{}/L2X.hdf5'.format(datatype), 
