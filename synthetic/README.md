@@ -10,8 +10,8 @@ Run the following commands in shell:
 git clone https://github.com/Jianbo-Lab/L2X
 cd L2X/synthetic/
 ###############################################
-# Train L2X, 
-# and generate median ranks of selected features for datatype by L2X.
+# Train L2X on the data of a specific datatype, 
+# and generate median ranks of selected features by L2X.
 # Omit '--train' when using a trained model.
 python explain.py --train --datatype datatype
 ```
