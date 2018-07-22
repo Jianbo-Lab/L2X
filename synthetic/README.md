@@ -1,4 +1,4 @@
-# L2X for synthetic data.
+# L2X for Synthetic.
 
 We provide as an example the source code to run L2X for synthetic data. 
 
