@@ -31,6 +31,8 @@ ks = {'orange_skin': 4, 'XOR': 2, 'nonlinear_additive': 4, 'switch': 5}
 def create_data(datatype, n = 1000): 
 	"""
 	Create train and validation datasets.
+	
+	
 
 	"""
 	x_train, y_train, _ = generate_data(n = n, 
@@ -129,9 +131,12 @@ def L2X(datatype, train = True):
 	# A tensor of shape, [batch_size, max_sents, 100]
 	logits = Dense(input_shape)(net) 
 	# [BATCH_SIZE, max_sents, 1]  
-	k = ks[datatype]; tau = 0.1
+	k = ks[datatype]; tau = 0.1 
+	
+        # k 提取特征数
 	samples = Sample_Concrete(tau, k, name = 'sample')(logits)
-
+        # Sample——Concrete 类 
+	# 
 	# q(X_S)
 	new_model_input = Multiply()([model_input, samples]) 
 	net = Dense(200, activation=activation, name = 'dense1',
@@ -161,7 +166,7 @@ def L2X(datatype, train = True):
 			by_name=True) 
 
 
-	pred_model = Model(model_input, samples)
+	pred_model = Model(model_input,samples)
 	pred_model.compile(loss=None,
 				  optimizer='rmsprop',
 				  metrics=[None]) 
