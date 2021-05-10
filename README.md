@@ -20,6 +20,10 @@ cd L2X
 sudo pip install -r requirements.txt
 ```
 See README.md in respective folders for details.
+
+## Synthetic datasets
+If you are interested in using the synthetic datasets in your own work / research, you can use the [l2x_synthetic](https://github.com/dunnkers/l2x_synthetic) package.
+
 ## Citation
 If you use this code for your research, please cite our [paper](https://arxiv.org/pdf/1802.07814.pdf):
 ```
